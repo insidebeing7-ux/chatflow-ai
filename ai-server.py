@@ -10,6 +10,7 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 @app.route("/ai", methods=["POST"])
 def ai_reply():
+    
     data = request.json
 
     text = data.get("text", "")[-2000:]
@@ -44,12 +45,16 @@ if mode == "summary":
     system = "Summarize in 2 short sentences."
 
 elif mode == "ai_writer":
-    system = "Rewrite in 3–6 short variations, each on a new line."
+    system = (
+        "You are a creative assistant. "
+        "Rewrite the user's message in 3–6 short variations, each on a new line."
+    )
 
 elif mode == "greeting":
-    system = "Give 3–5 greeting styles (casual, formal, slang)."
+    system = "Give 3–5 greeting styles: casual, formal, friendly, slang."
 
 # 👇 CUSTOM MODE (MUST BE LAST)
+
 if instructions and instructions.strip():
     system = f"""
 You are replying like a real human.
@@ -65,7 +70,7 @@ RULES:
     
 @app.route("/ai", methods=["POST"])
 def ai_reply():
-        try:
+    try:
     completion = client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[
@@ -79,7 +84,7 @@ def ai_reply():
     reply = completion.choices[0].message.content.strip()
     return jsonify({"reply": reply or "..."})
 
-except Exception as e:
+ except Exception as e:
     print("🔥 GROQ ERROR:", e)
     return jsonify({"reply": "AI error"}), 500
 
