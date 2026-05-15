@@ -38,46 +38,50 @@ def ai_reply():
             )
 
         # 🔥 MODE 3: GREETING STYLE (optional extra)
-        elif mode == "greeting":
-            system = (
-                "Transform the message into different greeting styles. "
-                "Give 3–5 variations like casual, formal, friendly, slang."
-            )
-          # ================= CUSTOM AI MODE (FIXED PLACE) =================
-        if instructions and instructions.strip():
-            system = f"""
-            You are replying to chat messages like a real human (not an assistant).
+       system = "Reply in 1 short natural sentence like in a phone call."
 
+if mode == "summary":
+    system = "Summarize in 2 short sentences."
+
+elif mode == "ai_writer":
+    system = "Rewrite in 3–6 short variations, each on a new line."
+
+elif mode == "greeting":
+    system = "Give 3–5 greeting styles (casual, formal, slang)."
+
+# 👇 CUSTOM MODE (MUST BE LAST)
+if instructions and instructions.strip():
+    system = f"""
+You are replying like a real human.
 
 USER-DEFINED BEHAVIOR:
 {instructions}
 
 RULES:
-- Follow the USER-DEFINED BEHAVIOR strictly
-- Adapt to the message tone (polite, casual, etc.)
-- Keep replies short (1 sentence)
-- Never act like an AI assistant
-- Never say things like "How can I help you?"
-- Never be generic or robotic
-- If instructions say "be short", you MUST be short.
-- If instructions say "only questions", you ONLY ask questions.
-- If instructions say "no replies", output nothing.
-- You are NOT allowed to ignore instructions or add extra behavior.
+- Follow strictly
+- Keep replies short
+- Never act like assistant
 """
     
+@app.route("/ai", methods=["POST"])
+def ai_reply():
+        try:
+    completion = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": text}
+        ],
+        temperature=0.8,
+        max_completion_tokens=80
+    )
 
-        completion = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": text}
-            ],
-            temperature=0.8,
-            max_completion_tokens=80
-        )
+    reply = completion.choices[0].message.content.strip()
+    return jsonify({"reply": reply or "..."})
 
-        reply = completion.choices[0].message.content.strip()
-        return jsonify({"reply": reply or "..."})
+except Exception as e:
+    print("🔥 GROQ ERROR:", e)
+    return jsonify({"reply": "AI error"}), 500
 
     except Exception as e:
      print("AI ERROR:", e)
