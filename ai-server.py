@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 # allow your Netlify frontend
 CORS(app, origins=[
-    "https://cheerful-caramel-d22102.netlify.app"
+    "https:chimerical-chaja-4ef324.netlify.app"
 ])
 
 # Groq client
