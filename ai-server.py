@@ -4,7 +4,7 @@ from flask_cors import CORS
 import os
 
 app = Flask(__name__)
-CORS(app, origins=["https://chatflow.com"])
+CORS(app, origins=["https://cheerful-caramel-d22102.netlify.app"])
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
