@@ -73,7 +73,7 @@ RULES:
                 {"role": "user", "content": text}
             ],
             temperature=0.8,
-            max_completion_tokens=80
+            max_completion_tokens=150
         )
 
         reply = completion.choices[0].message.content.strip()
