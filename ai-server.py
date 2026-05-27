@@ -3,6 +3,7 @@ from groq import Groq
 from flask_cors import CORS
 import os
 import time
+max_tokens = 400
 def safe_ai_call(messages, retries=2):
     for i in range(retries + 1):
         try:
@@ -79,7 +80,7 @@ RULES:
 - You are NOT allowed to ignore instructions or add extra behavior.
 """
 
-        max_tokens = 400 if mode == "ai_writer" else 150
+         if mode == "ai_writer" else 150
 
         completion = safe_ai_call([
     {"role": "system", "content": system},
