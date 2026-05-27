@@ -13,16 +13,19 @@ CORS(app, origins=[
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-def safe_ai_call(messages, max_tokens, retries=2):
+def safe_ai_call(messages, max_tokens, retries=2, use_json=False):
     for i in range(retries + 1):
         try:
-            return client.chat.completions.create(
+            kwargs = dict(
                 model="llama-3.1-8b-instant",
                 messages=messages,
                 temperature=0.8,
                 max_completion_tokens=max_tokens,
                 timeout=20
             )
+            if use_json:
+                kwargs["response_format"] = {"type": "json_object"}
+            return client.chat.completions.create(**kwargs)
         except Exception as e:
             if i == retries:
                 raise e
@@ -82,12 +85,13 @@ RULES:
         max_tokens = 400 if mode == "ai_writer" else 150
 
         completion = safe_ai_call(
-            [
-                {"role": "system", "content": system},
-                {"role": "user", "content": text}
-            ],
-            max_tokens=max_tokens
-        )
+    [
+        {"role": "system", "content": system},
+        {"role": "user", "content": text}
+    ],
+    max_tokens=max_tokens,
+    use_json=(mode == "ai_writer")  # signal to use JSON mode
+)
 
         reply = completion.choices[0].message.content.strip()
         return jsonify({"reply": reply or "..."})
