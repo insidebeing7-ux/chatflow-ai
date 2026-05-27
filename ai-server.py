@@ -67,14 +67,12 @@ def ai_reply():
                 "Give 3-5 variations like casual, formal, friendly, slang."
             )
 
-        # CUSTOM AI MODE (FIXED INDENTATION)
-        if instructions and instructions.strip():
-            system = f"""
+        # CUSTOM AI MODE — skip for ai_writer to preserve JSON format
+if instructions and instructions.strip() and mode != "ai_writer":
+    system = f"""
 You are replying to chat messages like a real human.
-
 USER-DEFINED BEHAVIOR:
 {instructions}
-
 RULES:
 - Follow instructions strictly
 - Keep replies short (1 sentence)
