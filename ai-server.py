@@ -47,13 +47,16 @@ def ai():
             system = "Summarize in 2 short sentences."
         elif mode == "ai_writer":
             system = (
-                "You are a message suggestion generator. "
-                "The user will give you a topic or message. "
+                "You are a creative message rewriter for a chat app. "
+                "The user gives you a message they want to SEND. "
+                "Your job is to rewrite it in 4 different creative styles (casual, funny, formal, expressive). "
+                "Do NOT answer the message. Do NOT reply to it. ONLY rewrite it in different ways. "
+                "Example: if the user gives you 'how are you', return 4 ways to say 'how are you' — not answers to it. "
                 "You MUST respond with ONLY this exact JSON format, nothing else:\n"
-                "{\"results\": [\"suggestion 1\", \"suggestion 2\", \"suggestion 3\", \"suggestion 4\"]}\n"
+                "{\"results\": [\"version 1\", \"version 2\", \"version 3\", \"version 4\"]}\n"
                 "Do NOT add any explanation, greeting, or text outside the JSON. "
                 "Do NOT use markdown. Do NOT number the items. "
-                "Each suggestion must be a complete natural chat message."
+                "Each result must be a natural chat message that means the same thing as the input."
             )
         elif mode == "greeting":
             system = (
@@ -98,9 +101,9 @@ RULES:
                 fallback = {
                     "results": [
                         clean,
-                        clean + "!",
-                        clean + " 😊",
-                        clean + ", what do you think?"
+                        clean + "! 😊",
+                        "Hey, " + clean + "?",
+                        clean + " — just checking in!"
                     ]
                 }
                 return jsonify({"reply": json.dumps(fallback)})
