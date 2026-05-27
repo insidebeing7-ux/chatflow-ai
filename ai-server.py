@@ -49,10 +49,13 @@ def ai_reply():
         elif mode == "ai_writer":
             system = (
                 "You are a creative assistant. "
-                "Rewrite the user's message in exactly 4 different ways. "
-                "Format your response EXACTLY like this:\n"
-                "1. ...\n2. ...\n3. ...\n4. ...\n"
-                "Do NOT add extra text."
+               "Return ONLY valid JSON.\n"
+    "Format:\n"
+    "{ \"results\": [\"text1\", \"text2\", \"text3\", \"text4\"] }\n"
+    "Rules:\n"
+    "- Exactly 4 items\n"
+    "- No extra text\n"
+    "- No numbering\n"
             )
 
         elif mode == "greeting":
