@@ -3,7 +3,7 @@ from groq import Groq
 from flask_cors import CORS
 import os
 import time
-
+import json
 app = Flask(__name__)
 CORS(app, origins=[
     "https://chatflow-ai-1.onrender.com",
@@ -32,14 +32,28 @@ def safe_ai_call(messages, max_tokens, retries=2, use_json=False):
             time.sleep(0.5)
 
 @app.route("/ai", methods=["POST"])
-def ai_reply():
-    data = request.json
-    text = data.get("text", "")[-2000:]
-    mode = data.get("mode", "chat")
-    instructions = data.get("instructions", "")
+ reply = completion.choices[0].message.content.strip()
 
-    if not text.strip():
-        return jsonify({"reply": "..."})
+        # For ai_writer, validate the JSON — if broken, rebuild it
+        if mode == "ai_writer":
+            try:
+                parsed = json.loads(reply)
+                if not isinstance(parsed.get("results"), list) or len(parsed["results"]) < 2:
+                    raise ValueError("bad results")
+            except Exception:
+                # Model returned plain text — wrap it into 4 variations manually
+                clean = reply.replace('"', "'").strip()
+                fallback = {
+                    "results": [
+                        clean,
+                        clean + "!",
+                        clean + " 😊",
+                        clean + ", what do you think?"
+                    ]
+                }
+                return jsonify({"reply": json.dumps(fallback)})
+
+        return jsonify({"reply": reply or "..."})
 
     try:
         # DEFAULT SYSTEM PROMPT
@@ -48,16 +62,15 @@ def ai_reply():
         if mode == "summary":
             system = "Summarize in 2 short sentences."
         elif mode == "ai_writer":
-            system = (
-                "You are a creative assistant. "
-                "Return ONLY valid JSON.\n"
-                "Format:\n"
-                "{ \"results\": [\"text1\", \"text2\", \"text3\", \"text4\"] }\n"
-                "Rules:\n"
-                "- Exactly 4 items\n"
-                "- No extra text\n"
-                "- No numbering\n"
-            )
+    system = (
+        "You are a message suggestion generator. "
+        "The user will give you a topic or message. "
+        "You MUST respond with ONLY this exact JSON format, nothing else:\n"
+        "{\"results\": [\"suggestion 1\", \"suggestion 2\", \"suggestion 3\", \"suggestion 4\"]}\n"
+        "Do NOT add any explanation, greeting, or text outside the JSON. "
+        "Do NOT use markdown. Do NOT number the items. "
+        "Each suggestion must be a complete natural chat message."
+    )
         elif mode == "greeting":
             system = (
                 "Transform the message into different greeting styles. "
