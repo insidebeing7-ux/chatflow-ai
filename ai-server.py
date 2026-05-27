@@ -63,7 +63,7 @@ def ai_reply():
             )
 
         # CUSTOM AI MODE
-      max_tokens = 400 if instructions and instructions.strip():
+      max_tokens = 400 if instructions and instructions.strip() else 150
             system = f"""You are replying to chat messages like a real human (not an assistant).
 USER-DEFINED BEHAVIOR:
 {instructions}
