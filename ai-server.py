@@ -2,7 +2,21 @@ from flask import Flask, request, jsonify
 from groq import Groq
 from flask_cors import CORS
 import os
-
+import time
+def safe_ai_call(messages, retries=2):
+    for i in range(retries + 1):
+        try:
+            return client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=messages,
+                temperature=0.8,
+                max_completion_tokens=max_tokens,
+                timeout=20
+            )
+        except Exception as e:
+            if i == retries:
+                raise e
+            time.sleep(0.5)
 app = Flask(__name__)
 CORS(app, origins=[
     "https://chatflow-ai-1.onrender.com",
@@ -67,15 +81,10 @@ RULES:
 
         max_tokens = 400 if mode == "ai_writer" else 150
 
-        completion = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": text}
-            ],
-            temperature=0.8,
-            max_completion_tokens=max_tokens
-        )
+        completion = safe_ai_call([
+    {"role": "system", "content": system},
+    {"role": "user", "content": text}
+])
 
         reply = completion.choices[0].message.content.strip()
         return jsonify({"reply": reply or "..."})
