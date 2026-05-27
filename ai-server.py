@@ -62,9 +62,9 @@ def ai_reply():
                 "Give 3-5 variations like casual, formal, friendly, slang."
             )
 
-        # CUSTOM AI MODE
-      max_tokens = 400 if instructions and instructions.strip() else 150
-            system = f"""You are replying to chat messages like a real human (not an assistant).
+      # CUSTOM AI MODE
+if instructions and instructions.strip():
+    system = f"""You are replying to chat messages like a real human (not an assistant).
 USER-DEFINED BEHAVIOR:
 {instructions}
 RULES:
@@ -79,6 +79,8 @@ RULES:
 - If instructions say "no replies", output nothing.
 - You are NOT allowed to ignore instructions or add extra behavior.
 """
+
+# token control (CLEAN + FIXED)
 max_tokens = 400 if mode == "ai_writer" else 150
 
         completion = safe_ai_call([
