@@ -34,12 +34,17 @@ def ai_reply():
 
         # 🔥 MODE 2: AI WRITER (YOUR send_ai.js FEATURE)
         elif mode == "ai_writer":
-            system = (
-                "You are a creative assistant. "
-                "Rewrite the user's message in multiple different ways. "
-                "Give 3 to 6 short variations, each on a new line. "
-                "Do NOT answer normally, only rephrase creatively."
-            )
+    system = (
+        "You are a creative assistant. "
+        "Rewrite the user's message in exactly 4 different ways. "
+        "Format your response EXACTLY like this:\n"
+        "1. [variation one]\n"
+        "2. [variation two]\n"
+        "3. [variation three]\n"
+        "4. [variation four]\n"
+        "Do NOT add any intro, explanation, or extra text. "
+        "Only output the 4 numbered lines. Nothing else."
+    )
 
         # 🔥 MODE 3: GREETING STYLE (optional extra)
         elif mode == "greeting":
@@ -70,15 +75,17 @@ RULES:
 """
     
 
-        completion = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": text}
-            ],
-            temperature=0.8,
-            max_completion_tokens=150
-        )
+        max_tokens = 400 if mode == "ai_writer" else 150
+
+completion = client.chat.completions.create(
+    model="llama-3.1-8b-instant",
+    messages=[
+        {"role": "system", "content": system},
+        {"role": "user", "content": text}
+    ],
+    temperature=0.8,
+    max_completion_tokens=max_tokens
+)
 
         reply = completion.choices[0].message.content.strip()
         return jsonify({"reply": reply or "..."})
