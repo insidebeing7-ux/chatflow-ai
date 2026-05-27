@@ -31,7 +31,6 @@ def safe_ai_call(messages, max_tokens, retries=2, use_json=False):
                 raise e
             time.sleep(0.5)
 
-
 @app.route("/ai", methods=["POST"])
 def ai_reply():
     data = request.json
@@ -48,19 +47,17 @@ def ai_reply():
 
         if mode == "summary":
             system = "Summarize in 2 short sentences."
-
         elif mode == "ai_writer":
             system = (
                 "You are a creative assistant. "
-               "Return ONLY valid JSON.\n"
-    "Format:\n"
-    "{ \"results\": [\"text1\", \"text2\", \"text3\", \"text4\"] }\n"
-    "Rules:\n"
-    "- Exactly 4 items\n"
-    "- No extra text\n"
-    "- No numbering\n"
+                "Return ONLY valid JSON.\n"
+                "Format:\n"
+                "{ \"results\": [\"text1\", \"text2\", \"text3\", \"text4\"] }\n"
+                "Rules:\n"
+                "- Exactly 4 items\n"
+                "- No extra text\n"
+                "- No numbering\n"
             )
-
         elif mode == "greeting":
             system = (
                 "Transform the message into different greeting styles. "
@@ -68,9 +65,8 @@ def ai_reply():
             )
 
         # CUSTOM AI MODE — skip for ai_writer to preserve JSON format
-if instructions and instructions.strip() and mode != "ai_writer":
-    system = f"""
-You are replying to chat messages like a real human.
+        if instructions and instructions.strip() and mode != "ai_writer":
+            system = f"""You are replying to chat messages like a real human.
 USER-DEFINED BEHAVIOR:
 {instructions}
 RULES:
@@ -83,25 +79,22 @@ RULES:
         max_tokens = 400 if mode == "ai_writer" else 150
 
         completion = safe_ai_call(
-    [
-        {"role": "system", "content": system},
-        {"role": "user", "content": text}
-    ],
-    max_tokens=max_tokens,
-    use_json=(mode == "ai_writer")  # signal to use JSON mode
-)
+            [
+                {"role": "system", "content": system},
+                {"role": "user", "content": text}
+            ],
+            max_tokens=max_tokens,
+            use_json=(mode == "ai_writer")
+        )
 
         reply = completion.choices[0].message.content.strip()
         return jsonify({"reply": reply or "..."})
 
     except Exception as e:
         print("AI ERROR:", e)
-
         if "rate" in str(e).lower() or "limit" in str(e).lower():
             return jsonify({"message": "⚠️ AI request limit reached."}), 429
-
         return jsonify({"message": "AI error"}), 500
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
