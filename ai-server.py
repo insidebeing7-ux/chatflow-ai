@@ -3,7 +3,7 @@ from groq import Groq
 from flask_cors import CORS
 import os
 import time
-max_tokens = 400
+
 def safe_ai_call(messages, retries=2):
     for i in range(retries + 1):
         try:
@@ -63,7 +63,7 @@ def ai_reply():
             )
 
         # CUSTOM AI MODE
-        if instructions and instructions.strip():
+      max_tokens = 400 if instructions and instructions.strip():
             system = f"""You are replying to chat messages like a real human (not an assistant).
 USER-DEFINED BEHAVIOR:
 {instructions}
