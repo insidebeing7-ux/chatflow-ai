@@ -79,8 +79,7 @@ RULES:
 - If instructions say "no replies", output nothing.
 - You are NOT allowed to ignore instructions or add extra behavior.
 """
-
-         if mode == "ai_writer" else 150
+max_tokens = 400 if mode == "ai_writer" else 150
 
         completion = safe_ai_call([
     {"role": "system", "content": system},
