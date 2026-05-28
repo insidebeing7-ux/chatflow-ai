@@ -115,7 +115,8 @@ RULES:
         if "rate" in str(e).lower() or "limit" in str(e).lower():
             return jsonify({"message": "⚠️ AI request limit reached."}), 429
         return jsonify({"message": "AI error"}), 500
- @app.route("/health", methods=["GET"])
+
+@app.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok"}), 200
 if __name__ == "__main__":
