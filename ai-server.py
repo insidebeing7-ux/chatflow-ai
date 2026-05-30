@@ -22,7 +22,7 @@ def safe_ai_call(messages, max_tokens, retries=2, use_json=False):
                 messages=messages,
                 temperature=0.8,
                 max_completion_tokens=max_tokens,
-                timeout=20
+                timeout=30
             )
             if use_json:
                 kwargs["response_format"] = {"type": "json_object"}
