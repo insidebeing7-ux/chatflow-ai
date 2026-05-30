@@ -4,16 +4,18 @@ from flask_cors import CORS
 import os
 import time
 import json
- 
+import threading
+import requests
+
 app = Flask(__name__)
 CORS(app, origins=[
     "https://chatflow-ai-1.onrender.com",
     "https://chatflow.com",
     "https://backend-1-liqz.onrender.com"
 ])
- 
+
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
- 
+
 def safe_ai_call(messages, max_tokens, retries=2, use_json=False):
     for i in range(retries + 1):
         try:
@@ -31,18 +33,17 @@ def safe_ai_call(messages, max_tokens, retries=2, use_json=False):
             if i == retries:
                 raise e
             time.sleep(0.5)
- 
+
 @app.route("/ai", methods=["POST"])
 def ai():
     data = request.get_json()
     text = data.get("text", "")
     mode = data.get("mode", "default")
     instructions = data.get("instructions", "")
- 
+
     try:
-        # DEFAULT SYSTEM PROMPT
         system = "Reply in 1 short natural sentence like in a phone call."
- 
+
         if mode == "summary":
             system = "Summarize in 2 short sentences."
         elif mode == "ai_writer":
@@ -63,8 +64,7 @@ def ai():
                 "Transform the message into different greeting styles. "
                 "Give 3-5 variations like casual, formal, friendly, slang."
             )
- 
-        # CUSTOM AI MODE — skip for ai_writer to preserve JSON format
+
         if instructions and instructions.strip() and mode != "ai_writer":
             system = f"""You are replying to chat messages like a real human.
 USER-DEFINED BEHAVIOR:
@@ -74,10 +74,9 @@ RULES:
 - Keep replies short (1 sentence)
 - Never sound like an AI assistant
 """
- 
-        # token control
+
         max_tokens = 400 if mode == "ai_writer" else 150
- 
+
         completion = safe_ai_call(
             [
                 {"role": "system", "content": system},
@@ -86,17 +85,15 @@ RULES:
             max_tokens=max_tokens,
             use_json=(mode == "ai_writer")
         )
- 
+
         reply = completion.choices[0].message.content.strip()
- 
-        # For ai_writer, validate the JSON — if broken, rebuild it
+
         if mode == "ai_writer":
             try:
                 parsed = json.loads(reply)
                 if not isinstance(parsed.get("results"), list) or len(parsed["results"]) < 2:
                     raise ValueError("bad results")
             except Exception:
-                # Model returned plain text — wrap it into 4 variations manually
                 clean = reply.replace('"', "'").strip()
                 fallback = {
                     "results": [
@@ -107,9 +104,9 @@ RULES:
                     ]
                 }
                 return jsonify({"reply": json.dumps(fallback)})
- 
+
         return jsonify({"reply": reply or "..."})
- 
+
     except Exception as e:
         print("AI ERROR:", e)
         if "rate" in str(e).lower() or "limit" in str(e).lower():
@@ -119,5 +116,22 @@ RULES:
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok"}), 200
+
+def self_ping():
+    while True:
+        time.sleep(13 * 60)
+        try:
+            url = os.getenv("SELF_URL", "https://chatflow-ai-1.onrender.com")
+            requests.post(url + "/ai", json={
+                "text": "hi",
+                "mode": "chat",
+                "instructions": ""
+            }, timeout=10)
+            print("✅ Self-ping sent")
+        except Exception as e:
+            print("⚠️ Self-ping failed:", e)
+
+threading.Thread(target=self_ping, daemon=True).start()
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
