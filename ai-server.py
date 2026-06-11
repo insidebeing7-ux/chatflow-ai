@@ -16,21 +16,14 @@ CORS(app, origins=[
 ])
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-GROUNDING_RULES = """
-STRICT RULES — NEVER BREAK THESE:
-- You do NOT know the user's real name, age, location, or any personal detail unless they just told you in this exact message.
-- Never invent names, facts, or context.
-- Never greet the user by a name you were not explicitly given.
-- Do not make assumptions about who the user is or what they want beyond what they wrote.
-- Stay strictly within the scope of the user's message. Do not add unrelated information.
-"""
+
 def safe_ai_call(messages, max_tokens, retries=2, use_json=False):
     for i in range(retries + 1):
         try:
             kwargs = dict(
                 model="llama-3.1-8b-instant",
                 messages=messages,
-                temperature=0.4,
+                temperature=0.8,
                 max_completion_tokens=max_tokens,
                 timeout=30
             )
@@ -56,6 +49,9 @@ def ai():
             system = "Summarize in 2 short sentences."
         elif mode == "ai_writer":
             system = (
+                " Never invent names, facts, or context."
+                " Do not make assumptions about who the user is or what they want beyond what they wrote."
+                "Stay strictly within the scope of the user's message. Do not add unrelated information."
                 "You are a creative message rewriter for a chat app. "
                 "The user gives you a message they want to SEND. "
                 "Your job is to rewrite it in 4 different creative styles (casual, funny, formal, expressive). "
@@ -74,13 +70,13 @@ def ai():
             )
 
         if instructions and instructions.strip() and mode != "ai_writer":
-            system = f"""USER-DEFINED BEHAVIOR:
+            system = f"""You are replying to chat messages like a real human.
+USER-DEFINED BEHAVIOR:
 {instructions}
-
-{GROUNDING_RULES}
-"""
-        else:
-            system = f"""{GROUNDING_RULES}
+RULES:
+- Follow instructions strictly
+- Keep replies short (1 sentence)
+- Never sound like an AI assistant
 """
 
         max_tokens = 400 if mode == "ai_writer" else 150
