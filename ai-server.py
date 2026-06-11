@@ -23,7 +23,7 @@ def safe_ai_call(messages, max_tokens, retries=2, use_json=False):
             kwargs = dict(
                 model="llama-3.1-8b-instant",
                 messages=messages,
-                temperature=0.4,   # Lower = less hallucination
+                temperature=0.8,
                 max_completion_tokens=max_tokens,
                 timeout=30
             )
@@ -35,52 +35,61 @@ def safe_ai_call(messages, max_tokens, retries=2, use_json=False):
                 raise e
             time.sleep(0.5)
 
-# ── Core anti-hallucination rules injected into every prompt ──────────────────
-GROUNDING_RULES = """
-STRICT RULES — NEVER BREAK THESE:
-- You do NOT know the user's real name, age, location, or any personal detail unless they just told you in this exact message.
-- Never invent names, facts, or context. If you don't know something, say so briefly.
-- Never greet the user by a name you were not explicitly given.
-- Do not make assumptions about who the user is or what they want beyond what they wrote.
-- Stay strictly within the scope of the user's message. Do not add unrelated information.
-- If the message is a greeting like "hello", reply with a simple greeting only — no names, no invented context.
-"""
-
 @app.route("/ai", methods=["POST"])
 def ai():
     data = request.get_json()
-    text = (data.get("text", "") or "").strip()
+    text = data.get("text", "")
     mode = data.get("mode", "default")
-    instructions = (data.get("instructions", "") or "").strip()
-
-    if not text:
-        return jsonify({"reply": "..."}), 200
+    instructions = data.get("instructions", "")
 
     try:
-        # ── MODE: ai_writer ───────────────────────────────────────────────────
-        if mode == "ai_writer":
+        system = "Reply in 1 short natural sentence like in a phone call."
+
+        if mode == "summary":
+            system = "Summarize in 2 short sentences."
+        elif mode == "ai_writer":
             system = (
                 "You are a creative message rewriter for a chat app. "
                 "The user gives you a message they want to SEND. "
-                "Your job is to rewrite it in 4 different creative styles: casual, funny, formal, expressive. "
+                "Your job is to rewrite it in 4 different creative styles (casual, funny, formal, expressive). "
                 "Do NOT answer the message. Do NOT reply to it. ONLY rewrite it in different ways. "
                 "Example: if the user gives you 'how are you', return 4 ways to say 'how are you' — not answers to it. "
                 "You MUST respond with ONLY this exact JSON format, nothing else:\n"
                 "{\"results\": [\"version 1\", \"version 2\", \"version 3\", \"version 4\"]}\n"
                 "Do NOT add any explanation, greeting, or text outside the JSON. "
                 "Do NOT use markdown. Do NOT number the items. "
-                "Each result must be a natural chat message that means the same thing as the input.\n\n"
-                + GROUNDING_RULES
+                "Each result must be a natural chat message that means the same thing as the input."
             )
-            completion = safe_ai_call(
-                [
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": text}
-                ],
-                max_tokens=400,
-                use_json=True
+        elif mode == "greeting":
+            system = (
+                "Transform the message into different greeting styles. "
+                "Give 3-5 variations like casual, formal, friendly, slang."
             )
-            reply = completion.choices[0].message.content.strip()
+
+        if instructions and instructions.strip() and mode != "ai_writer":
+            system = f"""You are replying to chat messages like a real human.
+USER-DEFINED BEHAVIOR:
+{instructions}
+RULES:
+- Follow instructions strictly
+- Keep replies short (1 sentence)
+- Never sound like an AI assistant
+"""
+
+        max_tokens = 400 if mode == "ai_writer" else 150
+
+        completion = safe_ai_call(
+            [
+                {"role": "system", "content": system},
+                {"role": "user", "content": text}
+            ],
+            max_tokens=max_tokens,
+            use_json=(mode == "ai_writer")
+        )
+
+        reply = completion.choices[0].message.content.strip()
+
+        if mode == "ai_writer":
             try:
                 parsed = json.loads(reply)
                 if not isinstance(parsed.get("results"), list) or len(parsed["results"]) < 2:
@@ -96,77 +105,7 @@ def ai():
                     ]
                 }
                 return jsonify({"reply": json.dumps(fallback)})
-            return jsonify({"reply": reply})
 
-        # ── MODE: summary ─────────────────────────────────────────────────────
-        if mode == "summary":
-            system = (
-                "Summarize the following in 2 short sentences. "
-                "Only use information present in the text. Do not add or infer anything.\n\n"
-                + GROUNDING_RULES
-            )
-            completion = safe_ai_call(
-                [
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": text}
-                ],
-                max_tokens=150
-            )
-            return jsonify({"reply": completion.choices[0].message.content.strip() or "..."})
-
-        # ── MODE: greeting ────────────────────────────────────────────────────
-        if mode == "greeting":
-            system = (
-                "Transform the message into 3–5 greeting style variations: casual, formal, friendly, slang. "
-                "Only rephrase what the user wrote. Do not invent names or context.\n\n"
-                + GROUNDING_RULES
-            )
-            completion = safe_ai_call(
-                [
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": text}
-                ],
-                max_tokens=150
-            )
-            return jsonify({"reply": completion.choices[0].message.content.strip() or "..."})
-
-        # ── MODE: chat (default) ──────────────────────────────────────────────
-        if instructions:
-            system = f"""You are a chat assistant replying to messages on behalf of a user.
-
-USER-DEFINED BEHAVIOR:
-{instructions}
-
-{GROUNDING_RULES}
-
-RESPONSE RULES:
-- Reply in 1 short, natural sentence as if texting a friend.
-- Follow the user-defined behavior above strictly.
-- Never sound like an AI assistant or customer support agent.
-- Never greet by name unless the name was given in this exact message.
-- Do not add sign-offs, emojis, or extra commentary unless the behavior instructs it.
-"""
-        else:
-            system = f"""You are a chat assistant replying to messages on behalf of a user.
-
-{GROUNDING_RULES}
-
-RESPONSE RULES:
-- Reply in 1 short, natural sentence as if texting a friend.
-- Match the tone of the incoming message (casual stays casual, serious stays serious).
-- Never sound like an AI assistant.
-- Never greet by name unless a name was given in this exact message.
-- If the message is just a greeting like "hi" or "hello", reply with only a simple greeting — nothing else.
-"""
-
-        completion = safe_ai_call(
-            [
-                {"role": "system", "content": system},
-                {"role": "user", "content": text}
-            ],
-            max_tokens=150
-        )
-        reply = completion.choices[0].message.content.strip()
         return jsonify({"reply": reply or "..."})
 
     except Exception as e:
@@ -175,11 +114,9 @@ RESPONSE RULES:
             return jsonify({"message": "⚠️ AI request limit reached."}), 429
         return jsonify({"message": "AI error"}), 500
 
-
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok"}), 200
-
 
 def self_ping():
     while True:
