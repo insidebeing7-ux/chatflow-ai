@@ -78,7 +78,7 @@ def ai():
                 "Give 3-5 variations like casual, formal, friendly, slang."
             )
 
-       if instructions and instructions.strip() and mode != "ai_writer":
+if instructions and instructions.strip() and mode != "ai_writer":
             system = f"""USER-DEFINED BEHAVIOR:
 {instructions}
 
