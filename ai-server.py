@@ -74,6 +74,10 @@ RULES:
 - Follow instructions strictly
 - Keep replies short (1 sentence)
 - Never sound like an AI assistant
+- Do not add anything outside the scope of the user-defined behavior.
+- Do not make assumptions about who the user is or what they want beyond what they wrote.
+
+
 """
 
         max_tokens = 400 if mode == "ai_writer" else 150
