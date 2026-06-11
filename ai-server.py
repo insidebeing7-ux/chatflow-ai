@@ -16,14 +16,22 @@ CORS(app, origins=[
 ])
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-
+GROUNDING_RULES = """
+STRICT RULES — NEVER BREAK THESE:
+- You do NOT know the user's real name, age, location, or any personal detail unless they just told you in this exact message.
+- Never invent names, facts, or context. If you don't know something, say so briefly.
+- Never greet the user by a name you were not explicitly given.
+- Do not make assumptions about who the user is or what they want beyond what they wrote.
+- Stay strictly within the scope of the user's message. Do not add unrelated information.
+- If the message is a greeting like "hello", reply with a simple greeting only — no names, no invented context.
+"""
 def safe_ai_call(messages, max_tokens, retries=2, use_json=False):
     for i in range(retries + 1):
         try:
             kwargs = dict(
                 model="llama-3.1-8b-instant",
                 messages=messages,
-                temperature=0.8,
+                temperature=0.4,
                 max_completion_tokens=max_tokens,
                 timeout=30
             )
@@ -67,13 +75,31 @@ def ai():
             )
 
         if instructions and instructions.strip() and mode != "ai_writer":
-            system = f"""You are replying to chat messages like a real human.
+            system = f"""You are a chat assistant replying to messages on behalf of a user.
+
 USER-DEFINED BEHAVIOR:
 {instructions}
-RULES:
-- Follow instructions strictly
-- Keep replies short (1 sentence)
-- Never sound like an AI assistant
+
+{GROUNDING_RULES}
+
+RESPONSE RULES:
+- Reply in 1 short, natural sentence as if texting a friend.
+- Follow the user-defined behavior above strictly.
+- Never sound like an AI assistant or customer support agent.
+- Never greet by name unless the name was given in this exact message.
+- Do not add sign-offs, emojis, or extra commentary unless the behavior instructs it.
+"""
+        else:
+            system = f"""You are a chat assistant replying to messages on behalf of a user.
+
+{GROUNDING_RULES}
+
+RESPONSE RULES:
+- Reply in 1 short, natural sentence as if texting a friend.
+- Match the tone of the incoming message (casual stays casual, serious stays serious).
+- Never sound like an AI assistant.
+- Never greet by name unless a name was given in this exact message.
+- If the message is just a greeting like "hi" or "hello", reply with only a simple greeting — nothing else.
 """
 
         max_tokens = 400 if mode == "ai_writer" else 150
