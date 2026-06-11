@@ -16,14 +16,22 @@ CORS(app, origins=[
 ])
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-
+GROUNDING_RULES = """
+STRICT RULES:
+- Only respond based on what the user wrote in this exact message.
+- Do not invent names, facts, details, or context that were not given to you.
+- Do not assume anything about the user beyond what they explicitly wrote.
+- Do not add anything outside the scope of the user-defined behavior.
+- Do not continue a conversation or add follow-up questions or extra sentences.
+- Output only what the behavior instructs. Nothing more.
+"""
 def safe_ai_call(messages, max_tokens, retries=2, use_json=False):
     for i in range(retries + 1):
         try:
             kwargs = dict(
                 model="llama-3.1-8b-instant",
                 messages=messages,
-                temperature=0.8,
+                temperature=0.4,
                 max_completion_tokens=max_tokens,
                 timeout=30
             )
@@ -70,14 +78,14 @@ def ai():
                 "Give 3-5 variations like casual, formal, friendly, slang."
             )
 
-        if instructions and instructions.strip() and mode != "ai_writer":
-            system = f"""You are replying to chat messages like a real human.
-USER-DEFINED BEHAVIOR:
+       if instructions and instructions.strip() and mode != "ai_writer":
+            system = f"""USER-DEFINED BEHAVIOR:
 {instructions}
-RULES:
-- Follow instructions strictly
-- Keep replies short (1 sentence)
-- Never sound like an AI assistant
+
+{GROUNDING_RULES}
+"""
+        else:
+            system = f"""{GROUNDING_RULES}
 """
 
         max_tokens = 400 if mode == "ai_writer" else 150
