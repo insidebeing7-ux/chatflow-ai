@@ -62,6 +62,7 @@ def ai():
                 "Do NOT add any explanation, greeting, or text outside the JSON. "
                 "Do NOT use markdown. Do NOT number the items. "
                 "Each result must be a natural chat message that means the same thing as the input."
+                "Do not add anything outside the scope of the user-defined behavior."
             )
         elif mode == "greeting":
             system = (
