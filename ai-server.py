@@ -76,7 +76,7 @@ RULES:
 - Never sound like an AI assistant
 - Do not add anything outside the scope of the user-defined behavior.
 - Do not make assumptions about who the user is or what they want beyond what they wrote.
-
+-Respond only using the information contained in the user's prompt. Rephrase, organize, and clarify the prompt creatively without adding new facts, assumptions, interpretations, examples, or information not explicitly present in the original tex
 
 """
 
