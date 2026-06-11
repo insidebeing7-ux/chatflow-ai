@@ -79,10 +79,16 @@ def ai():
             )
 
         if instructions and instructions.strip() and mode != "ai_writer":
-            system = f"""USER-DEFINED BEHAVIOR:
+            system = f"""You must follow ONLY this behavior, word for word if possible:
 {instructions}
 
-{GROUNDING_RULES}
+STRICT RULES:
+- Reply using ONLY what the behavior above says.
+- Do NOT add any extra words, sentences, or context beyond it.
+- Do NOT explain yourself.
+- Do NOT ask follow-up questions.
+- Do NOT continue the conversation beyond the instruction.
+- If the instruction says "I'm busy", reply only with something that means "I'm busy". Nothing else.
 """
         else:
             system = f"""{GROUNDING_RULES}
