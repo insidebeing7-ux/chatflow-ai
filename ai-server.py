@@ -12,7 +12,7 @@ CORS(app, origins=[
     "https://chatflow-ai-1.onrender.com",
     "https://chatflow.com",
     "https://backend-1-liqz.onrender.com",
-    "https://testback-4sru.onrender.com"
+    "https://backend-1-liqz.onrender.com"
 ])
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
