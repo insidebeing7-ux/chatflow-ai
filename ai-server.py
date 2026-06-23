@@ -9,7 +9,7 @@ import requests
 
 app = Flask(__name__)
 CORS(app, origins=[
-    "https://chatflow-ai-1.onrender.com",
+    "https://chatflow-ai-o3e6.onrender.com",
     "https://chatflow.com",
     "https://backend-1-liqz.onrender.com",
     "https://testback-4sru.onrender.com",
