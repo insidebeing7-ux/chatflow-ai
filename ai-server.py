@@ -52,18 +52,42 @@ def ai():
         if mode == "summary":
             system = "Summarize in 2 short sentences."
         elif mode == "help_me_write":
-            # NEW — "Help me write" single-suggestion mode. Takes a short
-            # prompt describing what the user wants to say, plus an optional
-            # tone, and returns ONE natural chat message (not 4 variants,
-            # not an answer to the prompt).
-            tone_line = f"Tone: {tone}.\n" if tone.strip() else ""
+            # tone now arrives packed as "Formal|length:Short|emoji:False"
+            parts = tone.split("|") if tone else []
+            tone_label = parts[0].strip() if parts else ""
+            length = "Medium"
+            use_emoji = False
+            for p in parts[1:]:
+                if p.startswith("length:"):
+                    length = p.split(":", 1)[1].strip()
+                if p.startswith("emoji:"):
+                    use_emoji = p.split(":", 1)[1].strip().lower() == "true"
+
+            tone_line = f"Tone: {tone_label}.\n" if tone_label else ""
+            emoji_line = "You may use light, tasteful emoji.\n" if use_emoji else "Do not use any emoji.\n"
+
+            if length == "Short":
+                length_line = (
+                    "Write EXACTLY 1 short sentence. Do not add details, reasons, or facts "
+                    "that are not explicitly present in the user's prompt. If the prompt is vague, "
+                    "keep the message equally vague rather than inventing specifics.\n"
+                )
+            elif length == "Long":
+                length_line = (
+                    "Write 4-6 sentences with more context and detail, but ONLY elaborate on what "
+                    "is explicitly implied by the user's prompt — do not invent names, dates, numbers, "
+                    "or events not present in the prompt.\n"
+                )
+            else:
+                length_line = "Write 2-3 sentences.\n"
+
             system = (
                 "You are helping someone write ONE chat message they are about to send. "
                 "The user describes WHAT they want to say — you write it for them, as a natural "
                 "message, not as a reply to them and not as an AI assistant. "
-                f"{tone_line}"
+                f"{tone_line}{length_line}{emoji_line}"
                 "Return ONLY the message text. No quotes, no explanation, no greeting like 'Sure, here is...'. "
-                "Keep it under 4 short sentences unless the prompt clearly needs more."
+                "Never state something as fact unless it was in the user's prompt."
             )
         elif mode == "ai_writer":
             system = (
