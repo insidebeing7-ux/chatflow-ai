@@ -44,12 +44,27 @@ def ai():
     text = data.get("text", "")
     mode = data.get("mode", "default")
     instructions = data.get("instructions", "")
+    tone = data.get("tone", "")   # NEW — used only by mode == "help_me_write"
 
     try:
         system = "Reply in 1 short natural sentence like in a phone call."
 
         if mode == "summary":
             system = "Summarize in 2 short sentences."
+        elif mode == "help_me_write":
+            # NEW — "Help me write" single-suggestion mode. Takes a short
+            # prompt describing what the user wants to say, plus an optional
+            # tone, and returns ONE natural chat message (not 4 variants,
+            # not an answer to the prompt).
+            tone_line = f"Tone: {tone}.\n" if tone.strip() else ""
+            system = (
+                "You are helping someone write ONE chat message they are about to send. "
+                "The user describes WHAT they want to say — you write it for them, as a natural "
+                "message, not as a reply to them and not as an AI assistant. "
+                f"{tone_line}"
+                "Return ONLY the message text. No quotes, no explanation, no greeting like 'Sure, here is...'. "
+                "Keep it under 4 short sentences unless the prompt clearly needs more."
+            )
         elif mode == "ai_writer":
             system = (
                 "You are a creative message rewriter for a chat app. "
@@ -83,7 +98,7 @@ RULES:
 
 """
 
-        max_tokens = 400 if mode == "ai_writer" else 150
+        max_tokens = 400 if mode in ("ai_writer", "help_me_write") else 150
 
         completion = safe_ai_call(
             [
