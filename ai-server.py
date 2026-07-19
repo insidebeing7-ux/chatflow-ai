@@ -49,6 +49,40 @@ def ai():
     try:
         system = "Reply in 1 short natural sentence like in a phone call."
 
+        # NEW — parse the same "|length:X|emoji:Y" packing used by help_me_write,
+        # so Auto AI's Short/Long buttons actually change reply length, and the
+        # model never invents extra facts just to pad out a "long" answer.
+        def parse_length_emoji(raw_tone):
+            parts = raw_tone.split("|") if raw_tone else []
+            tone_label = parts[0].strip() if parts else ""
+            length = "Medium"
+            use_emoji = False
+            for p in parts[1:]:
+                if p.startswith("length:"):
+                    length = p.split(":", 1)[1].strip()
+                if p.startswith("emoji:"):
+                    use_emoji = p.split(":", 1)[1].strip().lower() == "true"
+            return tone_label, length, use_emoji
+
+        if mode == "chat":
+            _, chat_length, chat_emoji = parse_length_emoji(tone)
+            emoji_line = " You may use light, tasteful emoji." if chat_emoji else " Do not use any emoji."
+            if chat_length == "Short":
+                system = (
+                    "Reply in EXACTLY 1 short sentence like in a phone call. "
+                    "Never add facts, details, or reasons not present in the incoming message."
+                    + emoji_line
+                )
+            elif chat_length == "Long":
+                system = (
+                    "Reply in 3-4 sentences, adding natural conversational detail, but ONLY "
+                    "elaborating on what is explicitly implied by the incoming message — never "
+                    "invent names, numbers, or events."
+                    + emoji_line
+                )
+            else:
+                system = "Reply in 1-2 short natural sentences like in a phone call." + emoji_line
+
         if mode == "summary":
             system = "Summarize in 2 short sentences."
         elif mode == "help_me_write":
