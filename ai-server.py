@@ -44,12 +44,12 @@ def ai():
     text = data.get("text", "")
     mode = data.get("mode", "default")
     instructions = data.get("instructions", "")
-    tone = data.get("tone", "")   # NEW — used only by mode == "help_me_write"
+    tone = data.get("tone", "")   # used by mode == "help_me_write" AND mode == "chat" (Auto AI)
 
     try:
         system = "Reply in 1 short natural sentence like in a phone call."
 
-        # NEW — parse the same "|length:X|emoji:Y" packing used by help_me_write,
+        # parse the same "|length:X|emoji:Y" packing used by help_me_write,
         # so Auto AI's Short/Long buttons actually change reply length, and the
         # model never invents extra facts just to pad out a "long" answer.
         def parse_length_emoji(raw_tone):
@@ -64,24 +64,31 @@ def ai():
                     use_emoji = p.split(":", 1)[1].strip().lower() == "true"
             return tone_label, length, use_emoji
 
+        # NEW — these are computed up front (not just inside the "chat" if-block)
+        # so the persona/instructions block below can reuse them instead of
+        # hardcoding its own separate length/emoji rules.
+        chat_length = "Medium"
+        chat_length_rule = "Reply in 1-2 short natural sentences like in a phone call."
+        chat_emoji_rule = "Do not use any emoji."
+
         if mode == "chat":
             _, chat_length, chat_emoji = parse_length_emoji(tone)
-            emoji_line = " You may use light, tasteful emoji." if chat_emoji else " Do not use any emoji."
+            chat_emoji_rule = "You may use light, tasteful emoji." if chat_emoji else "Do not use any emoji."
             if chat_length == "Short":
-                system = (
+                chat_length_rule = (
                     "Reply in EXACTLY 1 short sentence like in a phone call. "
                     "Never add facts, details, or reasons not present in the incoming message."
-                    + emoji_line
                 )
             elif chat_length == "Long":
-                system = (
+                chat_length_rule = (
                     "Reply in 3-4 sentences, adding natural conversational detail, but ONLY "
                     "elaborating on what is explicitly implied by the incoming message — never "
                     "invent names, numbers, or events."
-                    + emoji_line
                 )
             else:
-                system = "Reply in 1-2 short natural sentences like in a phone call." + emoji_line
+                chat_length_rule = "Reply in 1-2 short natural sentences like in a phone call."
+
+            system = chat_length_rule + " " + chat_emoji_rule
 
         if mode == "summary":
             system = "Summarize in 2 short sentences."
@@ -141,8 +148,19 @@ def ai():
                 "Transform the message into different greeting styles. "
                 "Give 3-5 variations like casual, formal, friendly, slang."
             )
-if instructions and instructions.strip() and mode != "ai_writer":
-    system = f"""You are role-playing as the user in a chat conversation.
+
+        # CHANGED — previously this block completely overwrote `system` with a
+        # persona template that hardcoded "1 sentence" (old rule 3) and "no
+        # emoji" (old rule 4), silently discarding whatever length/emoji the
+        # user picked in Auto AI's Short/Long/Emoji controls. Now rule 3 and
+        # rule 4 are built from chat_length_rule/chat_emoji_rule computed
+        # above, so a persona ("brutal", "inspirational", etc.) combined with
+        # "Long answer" or "Use Emoji" actually respects both at once.
+        if instructions and instructions.strip() and mode != "ai_writer":
+            length_instruction = chat_length_rule if mode == "chat" else "Keep replies short: 1 sentence, like a real text/phone reply."
+            emoji_instruction = chat_emoji_rule if mode == "chat" else "Do not use any emoji unless the persona explicitly calls for it."
+
+            system = f"""You are role-playing as the user in a chat conversation.
 The user has defined a PERMANENT PERSONA/BEHAVIOR you must follow for every single reply, no exceptions:
 
 PERSONA:
@@ -151,10 +169,11 @@ PERSONA:
 NON-NEGOTIABLE RULES:
 1. Every reply MUST be written fully in this persona/tone/style — never drop it, soften it, or revert to a neutral/helpful-assistant tone.
 2. This persona applies to EVERY incoming message, regardless of topic, length, or how the other person phrases things.
-3. Keep replies short: 1 sentence, like a real text/phone reply.
-4. Never say you are an AI, never apologize for the tone, never explain the persona.
-5. Do not invent facts, names, numbers, or events not present in the incoming message — only react to what was actually said, but IN THIS PERSONA.
-6. If the incoming message is unrelated to anything the persona would normally discuss, still reply in-persona (a "{instructions.strip()}" person's reaction to that message).
+3. {length_instruction}
+4. {emoji_instruction}
+5. Never say you are an AI, never apologize for the tone, never explain the persona.
+6. Do not invent facts, names, numbers, or events not present in the incoming message — only react to what was actually said, but IN THIS PERSONA.
+7. If the incoming message is unrelated to anything the persona would normally discuss, still reply in-persona (a "{instructions.strip()}" person's reaction to that message).
 
 Respond with ONLY the reply text — no labels, no quotes, no meta-commentary."""
 
