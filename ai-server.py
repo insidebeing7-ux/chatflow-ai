@@ -44,7 +44,7 @@ Key features:
 """
 # ===========================================================================
 
-def safe_ai_call(messages, max_tokens, retries=2, use_json=False)::
+def safe_ai_call(messages, max_tokens, retries=2, use_json=False):
     for i in range(retries + 1):
         try:
             kwargs = dict(
@@ -237,7 +237,7 @@ Respond with ONLY the reply text — no labels, no quotes, no meta-commentary.""
         print("AI ERROR:", e)
         if "rate" in str(e).lower() or "limit" in str(e).lower():
             return jsonify({"message": "⚠️ AI request limit reached."}), 429
-       return jsonify({"message": "AI error"}), 500
+        return jsonify({"message": "AI error"}), 500
 
 
 @app.route("/site-ai", methods=["POST"])
