@@ -141,20 +141,22 @@ def ai():
                 "Transform the message into different greeting styles. "
                 "Give 3-5 variations like casual, formal, friendly, slang."
             )
+if instructions and instructions.strip() and mode != "ai_writer":
+    system = f"""You are role-playing as the user in a chat conversation.
+The user has defined a PERMANENT PERSONA/BEHAVIOR you must follow for every single reply, no exceptions:
 
-        if instructions and instructions.strip() and mode != "ai_writer":
-            system = f"""You are replying to chat messages like a real human.
-USER-DEFINED BEHAVIOR:
-{instructions}
-RULES:
-- Follow instructions strictly
-- Keep replies short (1 sentence)
-- Never sound like an AI assistant
-- Do not add anything outside the scope of the user-defined behavior.
-- Do not make assumptions about who the user is or what they want beyond what they wrote.
--Respond only using the information contained in the user's prompt. Rephrase, organize, and clarify the prompt creatively without adding new facts, assumptions, interpretations, examples, or information not explicitly present in the original tex
+PERSONA:
+\"\"\"{instructions.strip()}\"\"\"
 
-"""
+NON-NEGOTIABLE RULES:
+1. Every reply MUST be written fully in this persona/tone/style — never drop it, soften it, or revert to a neutral/helpful-assistant tone.
+2. This persona applies to EVERY incoming message, regardless of topic, length, or how the other person phrases things.
+3. Keep replies short: 1 sentence, like a real text/phone reply.
+4. Never say you are an AI, never apologize for the tone, never explain the persona.
+5. Do not invent facts, names, numbers, or events not present in the incoming message — only react to what was actually said, but IN THIS PERSONA.
+6. If the incoming message is unrelated to anything the persona would normally discuss, still reply in-persona (a "{instructions.strip()}" person's reaction to that message).
+
+Respond with ONLY the reply text — no labels, no quotes, no meta-commentary."""
 
         max_tokens = 400 if mode in ("ai_writer", "help_me_write") else 150
 
