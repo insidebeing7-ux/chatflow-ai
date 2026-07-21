@@ -20,30 +20,6 @@ CORS(app, origins=[
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-# ===== SITE KNOWLEDGE BASE (edit this to keep the assistant accurate) =====
-SITE_CONTEXT = """
-Site name: Kairos (Kairos.chat)
-What it is: An automated messaging app. It replies to chats for you when you're
-busy, suggests smart context-aware replies, and can be customized to sound like you.
-
-Sections on the landing page:
-- "home" (#home): Hero section — intro, "Start for free" and "See it in action" buttons.
-- "about" (#about): "How it works" — explains Auto Reply, AI Mode, Smart Suggestions,
-  demo videos.
-- "signup" (/signup): Where a new user creates an account.
-
-Key features:
-- Auto Reply: one-tap toggle (⚡) that lets Kairos answer incoming messages automatically.
-- AI Mode: user writes instructions (e.g. "reply politely", "say I'm in a meeting")
-  and Kairos follows them for every auto-reply.
-- Smart Suggestions: tap ⚡ to get AI-generated reply options without full automation.
-- Your Voice, Always: Kairos adapts tone to sound like the user (formal/friendly/punchy).
-- Stay in Control: every automated reply is logged; auto-reply can be turned off anytime.
-- Phone App: native iOS/Android app is coming soon (not available yet).
-- Pricing: not mentioned on the site — if asked, say pricing isn't published yet.
-"""
-# ===========================================================================
-
 def safe_ai_call(messages, max_tokens, retries=2, use_json=False):
     for i in range(retries + 1):
         try:
@@ -238,51 +214,6 @@ Respond with ONLY the reply text — no labels, no quotes, no meta-commentary.""
         if "rate" in str(e).lower() or "limit" in str(e).lower():
             return jsonify({"message": "⚠️ AI request limit reached."}), 429
         return jsonify({"message": "AI error"}), 500
-
-
-@app.route("/site-ai", methods=["POST"])
-def site_ai():
-    data = request.get_json(force=True, silent=True) or {}
-    text = (data.get("text") or "").strip()[:300]
-    if not text:
-        return jsonify({"reply": "Ask me anything about Kairos!", "action": None, "target": None})
-
-    system = f"""You are "Kairos Assistant", the helpful guide embedded on the Kairos
-landing page. Answer ONLY using the site information below — never invent features,
-pricing, or pages that aren't listed.
-
-SITE INFORMATION:
-{SITE_CONTEXT}
-
-If the user is asking to be taken/navigated somewhere on the site (e.g. "take me to
-sign up", "show me how it works", "go home", "I want to create an account"), respond
-with strict JSON ONLY in this exact shape:
-{{"reply": "<short friendly sentence, e.g. 'Sure, taking you to sign up!'>", "action": "navigate", "target": "home" | "about" | "signup"}}
-
-For any other question (what does the app do, what is auto reply, etc.), respond with
-strict JSON ONLY in this exact shape:
-{{"reply": "<helpful answer based only on SITE INFORMATION>", "action": null, "target": null}}
-
-Never output anything except that JSON object. No markdown, no extra text."""
-
-    try:
-        completion = safe_ai_call(
-            [{"role": "system", "content": system},
-             {"role": "user", "content": text}],
-            max_tokens=220,
-            use_json=True
-        )
-        raw = completion.choices[0].message.content.strip()
-        parsed = json.loads(raw)
-        if "reply" not in parsed:
-            raise ValueError("bad shape")
-        parsed.setdefault("action", None)
-        parsed.setdefault("target", None)
-        return jsonify(parsed)
-    except Exception as e:
-        print("SITE AI ERROR:", e)
-        return jsonify({"reply": "Sorry, I couldn't process that — try rephrasing.", "action": None, "target": None}), 500
-
 
 @app.route("/health", methods=["GET"])
 def health():
