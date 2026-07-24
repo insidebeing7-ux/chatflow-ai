@@ -157,27 +157,32 @@ def ai():
                 "Give 3-5 variations like casual, formal, friendly, slang."
             )
 
-        # CHANGED — previously this block completely overwrote `system` with a
-        # persona template that hardcoded "1 sentence" (old rule 3) and "no
-        # emoji" (old rule 4), silently discarding whatever length/emoji the
-        # user picked in Auto AI's Short/Long/Emoji controls. Now rule 3 and
-        # rule 4 are built from chat_length_rule/chat_emoji_rule computed
-        # above, so a persona ("brutal", "inspirational", etc.) combined with
-        # "Long answer" or "Use Emoji" actually respects both at once.
         # CHANGED — help_me_write must NEVER be overwritten by the persona/reply
-# template below. That template assumes it's replying TO an incoming
-# message ("role-playing as the user in a chat conversation"), which is
-# exactly why inputs like "can you answer a question" got answered
-# instead of drafted as a message to send. help_me_write already has its
-# own correct system prompt built above (drafting-tool instructions) and
-# must keep it regardless of whatever persona/instructions Auto AI has saved.
-if instructions and instructions.strip() and mode not in ("ai_writer", "help_me_write"):
-    length_instruction = chat_length_rule if mode == "chat" else "Keep replies short: 1 sentence, like a real text/phone reply."
-    emoji_instruction = chat_emoji_rule if mode == "chat" else "Do not use any emoji unless the persona explicitly calls for it."
+        # template below. That template assumes it's replying TO an incoming
+        # message ("role-playing as the user in a chat conversation"), which is
+        # exactly why inputs like "can you answer a question" got answered
+        # instead of drafted as a message to send. help_me_write already has its
+        # own correct system prompt built above (drafting-tool instructions) and
+        # must keep it regardless of whatever persona/instructions Auto AI has saved.
+        if instructions and instructions.strip() and mode not in ("ai_writer", "help_me_write"):
+            length_instruction = chat_length_rule if mode == "chat" else "Keep replies short: 1 sentence, like a real text/phone reply."
+            emoji_instruction = chat_emoji_rule if mode == "chat" else "Do not use any emoji unless the persona explicitly calls for it."
 
-    system = f"""You are role-playing as the user in a chat conversation.
+            system = f"""You are role-playing as the user in a chat conversation.
 The user has defined a PERMANENT PERSONA/BEHAVIOR you must follow for every single reply, no exceptions:
-...
+
+PERSONA:
+\"\"\"{instructions.strip()}\"\"\"
+
+NON-NEGOTIABLE RULES:
+1. Every reply MUST be written fully in this persona/tone/style — never drop it, soften it, or revert to a neutral/helpful-assistant tone.
+2. This persona applies to EVERY incoming message, regardless of topic, length, or how the other person phrases things.
+3. {length_instruction}
+4. {emoji_instruction}
+5. Never say you are an AI, never apologize for the tone, never explain the persona.
+6. Do not invent facts, names, numbers, or events not present in the incoming message — only react to what was actually said, but IN THIS PERSONA.
+7. If the incoming message is unrelated to anything the persona would normally discuss, still reply in-persona (a "{instructions.strip()}" person's reaction to that message).
+
 Respond with ONLY the reply text — no labels, no quotes, no meta-commentary."""
 
         max_tokens = 400 if mode in ("ai_writer", "help_me_write") else 150
