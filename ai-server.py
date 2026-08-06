@@ -100,17 +100,22 @@ def ai():
             system = "Summarize in 2 short sentences."
         elif mode == "help_me_write":
             # tone now arrives packed as "Formal|length:Short|emoji:False"
+            # FIXED — this block was dedented incorrectly (fell outside the
+            # elif entirely), which is a syntax error and would crash the
+            # whole /ai endpoint on deploy — matching the symptom of
+            # "tone selection doesn't generate anything." Now properly
+            # nested inside elif mode == "help_me_write".
             parts = tone.split("|") if tone else []
-length = "Medium"
-use_emoji = False
-tone_label = ""
-for p in parts:
-    if p.startswith("length:"):
-        length = p.split(":", 1)[1].strip()
-    elif p.startswith("emoji:"):
-        use_emoji = p.split(":", 1)[1].strip().lower() == "true"
-    elif p.strip():
-        tone_label = p.strip()  # whatever's left is the tone label, in any position
+            length = "Medium"
+            use_emoji = False
+            tone_label = ""
+            for p in parts:
+                if p.startswith("length:"):
+                    length = p.split(":", 1)[1].strip()
+                elif p.startswith("emoji:"):
+                    use_emoji = p.split(":", 1)[1].strip().lower() == "true"
+                elif p.strip():
+                    tone_label = p.strip()  # whatever's left is the tone label, in any position
 
             tone_line = f"Tone: {tone_label}.\n" if tone_label else ""
             emoji_line = (
@@ -141,22 +146,22 @@ for p in parts:
             # instructions buried at the end of a long system prompt than ones
             # stated up front.
             system = (
-    f"{emoji_line}{length_line}"
-    "You are a message-drafting tool inside a chat app. The user is composing a message "
-    "they are about to send to someone else. The text they give you is either (a) a literal "
-    "message they want polished/expanded, or (b) a short description/topic of what they want to say. "
-    "In BOTH cases your job is to OUTPUT THE MESSAGE ITSELF — never answer it, never respond to it, "
-    "never treat it as something said TO you.\n"
-    "CRITICAL: Do not interpret the input as a greeting or question aimed at you. "
-    "Example — input: 'what's up' → WRONG output: 'I'm fine, how are you?' "
-    "RIGHT output: a casual message like 'Hey, what's up? Haven't heard from you in a while.' "
-    "Another example — input: 'ask him if he's free tonight' → output should BE that question "
-    "to send, e.g. 'Hey, are you free tonight?' — not an answer to it.\n"
-    f"{tone_line}"
-    "Return ONLY the message text to be sent. No quotes, no explanation, no meta-commentary, "
-    "no greeting like 'Sure, here is...'. "
-    "Never state something as fact unless it was in the user's prompt."
-)
+                f"{emoji_line}{length_line}"
+                "You are a message-drafting tool inside a chat app. The user is composing a message "
+                "they are about to send to someone else. The text they give you is either (a) a literal "
+                "message they want polished/expanded, or (b) a short description/topic of what they want to say. "
+                "In BOTH cases your job is to OUTPUT THE MESSAGE ITSELF — never answer it, never respond to it, "
+                "never treat it as something said TO you.\n"
+                "CRITICAL: Do not interpret the input as a greeting or question aimed at you. "
+                "Example — input: 'what's up' → WRONG output: 'I'm fine, how are you?' "
+                "RIGHT output: a casual message like 'Hey, what's up? Haven't heard from you in a while.' "
+                "Another example — input: 'ask him if he's free tonight' → output should BE that question "
+                "to send, e.g. 'Hey, are you free tonight?' — not an answer to it.\n"
+                f"{tone_line}"
+                "Return ONLY the message text to be sent. No quotes, no explanation, no meta-commentary, "
+                "no greeting like 'Sure, here is...'. "
+                "Never state something as fact unless it was in the user's prompt."
+            )
         elif mode == "ai_writer":
             system = (
                 "You are a creative message rewriter for a chat app. "
