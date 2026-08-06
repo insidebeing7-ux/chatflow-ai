@@ -95,14 +95,16 @@ def ai():
         elif mode == "help_me_write":
             # tone now arrives packed as "Formal|length:Short|emoji:False"
             parts = tone.split("|") if tone else []
-            tone_label = parts[0].strip() if parts else ""
-            length = "Medium"
-            use_emoji = False
-            for p in parts[1:]:
-                if p.startswith("length:"):
-                    length = p.split(":", 1)[1].strip()
-                if p.startswith("emoji:"):
-                    use_emoji = p.split(":", 1)[1].strip().lower() == "true"
+length = "Medium"
+use_emoji = False
+tone_label = ""
+for p in parts:
+    if p.startswith("length:"):
+        length = p.split(":", 1)[1].strip()
+    elif p.startswith("emoji:"):
+        use_emoji = p.split(":", 1)[1].strip().lower() == "true"
+    elif p.strip():
+        tone_label = p.strip()  # whatever's left is the tone label, in any position
 
             tone_line = f"Tone: {tone_label}.\n" if tone_label else ""
             emoji_line = "You may use light, tasteful emoji.\n" if use_emoji else "Do not use any emoji.\n"
