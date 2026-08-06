@@ -73,7 +73,11 @@ def ai():
 
         if mode == "chat":
             _, chat_length, chat_emoji = parse_length_emoji(tone)
-            chat_emoji_rule = "You may use light, tasteful emoji." if chat_emoji else "Do not use any emoji."
+            chat_emoji_rule = (
+                "MANDATORY: include at least one relevant emoji in your reply — this is required, not optional."
+                if chat_emoji else
+                "Do not use any emoji."
+            )
             if chat_length == "Short":
                 chat_length_rule = (
                     "Reply in EXACTLY 1 short sentence like in a phone call. "
@@ -81,14 +85,16 @@ def ai():
                 )
             elif chat_length == "Long":
                 chat_length_rule = (
-                    "Reply in 3-4 sentences, adding natural conversational detail, but ONLY "
-                    "elaborating on what is explicitly implied by the incoming message — never "
-                    "invent names, numbers, or events."
+                    "MANDATORY: Reply with AT LEAST 3 full sentences, ideally 3-4. Do not give a "
+                    "one-line reply. Add natural conversational detail, but ONLY elaborate on what "
+                    "is explicitly implied by the incoming message — never invent names, numbers, or events."
                 )
             else:
                 chat_length_rule = "Reply in 1-2 short natural sentences like in a phone call."
 
-            system = chat_length_rule + " " + chat_emoji_rule
+            # NEW — emoji rule stated first so the small/fast model is less
+            # likely to drop it.
+            system = chat_emoji_rule + " " + chat_length_rule
 
         if mode == "summary":
             system = "Summarize in 2 short sentences."
@@ -107,7 +113,12 @@ for p in parts:
         tone_label = p.strip()  # whatever's left is the tone label, in any position
 
             tone_line = f"Tone: {tone_label}.\n" if tone_label else ""
-            emoji_line = "You may use light, tasteful emoji.\n" if use_emoji else "Do not use any emoji.\n"
+            emoji_line = (
+                "MANDATORY: You must include at least one relevant emoji in the message. "
+                "This is a hard requirement, not a suggestion — the message is incomplete without it.\n"
+                if use_emoji else
+                "Do not use any emoji.\n"
+            )
 
             if length == "Short":
                 length_line = (
@@ -117,14 +128,20 @@ for p in parts:
                 )
             elif length == "Long":
                 length_line = (
-                    "Write 4-6 sentences with more context and detail, but ONLY elaborate on what "
-                    "is explicitly implied by the user's prompt — do not invent names, dates, numbers, "
-                    "or events not present in the prompt.\n"
+                    "MANDATORY: Write AT LEAST 4 full sentences, ideally 5-6. Do not stop early. "
+                    "Add natural conversational detail and elaboration, but ONLY on what is explicitly "
+                    "implied by the user's prompt — do not invent names, dates, numbers, or events not "
+                    "present in the prompt. A short reply here is a failure to follow instructions.\n"
                 )
             else:
                 length_line = "Write 2-3 sentences.\n"
 
+            # NEW — emoji/length are put FIRST in the system prompt. Small, fast
+            # models (llama-3.1-8b-instant) are much more likely to drop
+            # instructions buried at the end of a long system prompt than ones
+            # stated up front.
             system = (
+    f"{emoji_line}{length_line}"
     "You are a message-drafting tool inside a chat app. The user is composing a message "
     "they are about to send to someone else. The text they give you is either (a) a literal "
     "message they want polished/expanded, or (b) a short description/topic of what they want to say. "
@@ -135,7 +152,7 @@ for p in parts:
     "RIGHT output: a casual message like 'Hey, what's up? Haven't heard from you in a while.' "
     "Another example — input: 'ask him if he's free tonight' → output should BE that question "
     "to send, e.g. 'Hey, are you free tonight?' — not an answer to it.\n"
-    f"{tone_line}{length_line}{emoji_line}"
+    f"{tone_line}"
     "Return ONLY the message text to be sent. No quotes, no explanation, no meta-commentary, "
     "no greeting like 'Sure, here is...'. "
     "Never state something as fact unless it was in the user's prompt."
