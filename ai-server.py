@@ -14,7 +14,8 @@ CORS(app, origins=[
     "https://backend-1-liqz.onrender.com",
     "https://testback-4sru.onrender.com",
     "https://backend-vz58.onrender.com",
-    "https://chatflow-ai-o3e6.onrender.com"
+    "https://chatflow-ai-o3e6.onrender.com",
+    https://backend-vz58.onrender.com
     
 ])
 
