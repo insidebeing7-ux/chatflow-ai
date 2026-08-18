@@ -256,7 +256,7 @@ def self_ping():
     while True:
         time.sleep(13 * 60)
         try:
-            url = os.getenv("SELF_URL", "https://chatflow-ai-1.onrender.com")
+            url = os.getenv("SELF_URL", "https://chatflow-ai-o3e6.onrender.com")
             requests.post(url + "/ai", json={
                 "text": "hi",
                 "mode": "chat",
