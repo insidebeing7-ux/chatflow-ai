@@ -25,7 +25,7 @@ def safe_ai_call(messages, max_tokens, retries=2, use_json=False):
     for i in range(retries + 1):
         try:
             kwargs = dict(
-                model="llama-3.1-8b-instant",
+                model="meta-llama/llama-prompt-guard-2-22m",
                 messages=messages,
                 temperature=0.8,
                 max_completion_tokens=max_tokens,
