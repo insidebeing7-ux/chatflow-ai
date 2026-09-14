@@ -240,9 +240,7 @@ Respond with ONLY the reply text — no labels, no quotes, no meta-commentary.""
                 }
                 return jsonify({"reply": json.dumps(fallback)})
 
-        if not reply:
-    print("⚠️ EMPTY AI REPLY — mode:", mode, "system len:", len(system), "text:", text[:100])
-return jsonify({"reply": reply or "..."})
+        return jsonify({"reply": reply or "..."})
 
     except Exception as e:
         print("AI ERROR:", e)
