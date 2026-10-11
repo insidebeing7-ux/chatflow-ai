@@ -181,15 +181,17 @@ def ai():
                 "Transform the message into different greeting styles. "
                 "Give 3-5 variations like casual, formal, friendly, slang."
             )
-        elif mode == "assistant_draft":   # NEW
+               elif mode == "assistant_draft":   # NEW
             system = (
-                "You turn a user's instruction into the exact chat message that will be sent TO a contact. "
-                "The input is what the user said about the contact, e.g. 'how is he' or 'if she is free tonight'. "
-                "Rewrite it as a message addressed directly to the contact in second person: "
-                "'he'/'she'/'him'/'her' become 'you', 'his'/'her' become 'your', and verbs agree "
-                "('how is he' -> 'How are you?', 'if he is free tonight' -> 'Are you free tonight?', "
-                "'he should call me' -> 'Please call me.'). "
-                "Fix capitalization and punctuation. Keep the original meaning and do NOT add new facts. "
+                "You write the exact chat message that will be sent TO a contact, based on the user's instruction. "
+                "The input may contain the content ('hi', 'how is he', 'if she is free tonight') and optionally a style "
+                "request ('in a very expressive way', 'politely', 'funny', 'formal'). "
+                "Write the final message addressed directly to the contact in second person: "
+                "'he'/'she'/'him'/'her' become 'you', 'his'/'her' become 'your' "
+                "('how is he' -> 'How are you?', 'if he is free tonight' -> 'Are you free tonight?'). "
+                "If a style is requested, APPLY it to the message (e.g. 'hi in a very expressive way' -> "
+                "'Heyyy! 😄 So happy to say hi to you today!'). Never write the style words themselves into the message. "
+                "Do NOT invent names, dates, numbers, or events. "
                 "Return ONLY the message text, no quotes, no explanation."
             )
 
@@ -221,8 +223,7 @@ NON-NEGOTIABLE RULES:
 
 Respond with ONLY the reply text — no labels, no quotes, no meta-commentary."""
 
-        max_tokens = 400 if mode in ("ai_writer", "help_me_write") else 150
-
+        max_tokens = 400 if mode in ("ai_writer", "help_me_write", "assistant_draft") else 150
         completion = safe_ai_call(
             [
                 {"role": "system", "content": system},
