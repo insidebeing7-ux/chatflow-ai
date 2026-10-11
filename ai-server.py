@@ -176,10 +176,21 @@ def ai():
                 "Do NOT use markdown. Do NOT number the items. "
                 "Each result must be a natural chat message that means the same thing as the input."
             )
-        elif mode == "greeting":
+               elif mode == "greeting":
             system = (
                 "Transform the message into different greeting styles. "
                 "Give 3-5 variations like casual, formal, friendly, slang."
+            )
+        elif mode == "assistant_draft":   # NEW
+            system = (
+                "You turn a user's instruction into the exact chat message that will be sent TO a contact. "
+                "The input is what the user said about the contact, e.g. 'how is he' or 'if she is free tonight'. "
+                "Rewrite it as a message addressed directly to the contact in second person: "
+                "'he'/'she'/'him'/'her' become 'you', 'his'/'her' become 'your', and verbs agree "
+                "('how is he' -> 'How are you?', 'if he is free tonight' -> 'Are you free tonight?', "
+                "'he should call me' -> 'Please call me.'). "
+                "Fix capitalization and punctuation. Keep the original meaning and do NOT add new facts. "
+                "Return ONLY the message text, no quotes, no explanation."
             )
 
         # CHANGED — help_me_write must NEVER be overwritten by the persona/reply
@@ -189,7 +200,7 @@ def ai():
         # instead of drafted as a message to send. help_me_write already has its
         # own correct system prompt built above (drafting-tool instructions) and
         # must keep it regardless of whatever persona/instructions Auto AI has saved.
-        if instructions and instructions.strip() and mode not in ("ai_writer", "help_me_write"):
+                if instructions and instructions.strip() and mode not in ("ai_writer", "help_me_write", "assistant_draft"):
             length_instruction = chat_length_rule if mode == "chat" else "Keep replies short: 1 sentence, like a real text/phone reply."
             emoji_instruction = chat_emoji_rule if mode == "chat" else "Do not use any emoji unless the persona explicitly calls for it."
 
