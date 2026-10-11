@@ -174,9 +174,9 @@ def ai():
                 "{\"results\": [\"version 1\", \"version 2\", \"version 3\", \"version 4\"]}\n"
                 "Do NOT add any explanation, greeting, or text outside the JSON. "
                 "Do NOT use markdown. Do NOT number the items. "
-                "Each result must be a natural chat message that means the same thing as the input."
+                                "Each result must be a natural chat message that means the same thing as the input."
             )
-               elif mode == "greeting":
+        elif mode == "greeting":
             system = (
                 "Transform the message into different greeting styles. "
                 "Give 3-5 variations like casual, formal, friendly, slang."
@@ -199,8 +199,8 @@ def ai():
         # exactly why inputs like "can you answer a question" got answered
         # instead of drafted as a message to send. help_me_write already has its
         # own correct system prompt built above (drafting-tool instructions) and
-        # must keep it regardless of whatever persona/instructions Auto AI has saved.
-                if instructions and instructions.strip() and mode not in ("ai_writer", "help_me_write", "assistant_draft"):
+                # must keep it regardless of whatever persona/instructions Auto AI has saved.
+        if instructions and instructions.strip() and mode not in ("ai_writer", "help_me_write", "assistant_draft"):
             length_instruction = chat_length_rule if mode == "chat" else "Keep replies short: 1 sentence, like a real text/phone reply."
             emoji_instruction = chat_emoji_rule if mode == "chat" else "Do not use any emoji unless the persona explicitly calls for it."
 
