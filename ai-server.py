@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+qfrom flask import Flask, request, jsonify
 from groq import Groq
 from flask_cors import CORS
 import os
@@ -176,12 +176,12 @@ def ai():
                 "Do NOT use markdown. Do NOT number the items. "
                                 "Each result must be a natural chat message that means the same thing as the input."
             )
-        elif mode == "greeting":
+              elif mode == "greeting":
             system = (
                 "Transform the message into different greeting styles. "
                 "Give 3-5 variations like casual, formal, friendly, slang."
             )
-               elif mode == "assistant_draft":   # NEW
+        elif mode == "assistant_draft":   # NEW
             system = (
                 "You write the exact chat message that will be sent TO a contact, based on the user's instruction. "
                 "The input may contain the content ('hi', 'how is he', 'if she is free tonight') and optionally a style "
