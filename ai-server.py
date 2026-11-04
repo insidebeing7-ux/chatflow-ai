@@ -250,11 +250,21 @@ Respond with ONLY the reply text — no labels, no quotes, no meta-commentary.""
                         clean + " — just checking in!"
                     ]
                 }
-                return jsonify({"reply": json.dumps(fallback)})
+                                u = getattr(completion, "usage", None)
+                return jsonify({
+                    "reply": json.dumps(fallback),
+                    "usage": {"total_tokens": getattr(u, "total_tokens", 0)} if u else None
+                })
 
         if not reply:
               print("⚠️ EMPTY AI REPLY — mode:", mode, "system len:", len(system), "text:", text[:100])
-        return jsonify({"reply": reply or "..."})
+                u = getattr(completion, "usage", None)
+        usage = {
+            "prompt_tokens": getattr(u, "prompt_tokens", 0),
+            "completion_tokens": getattr(u, "completion_tokens", 0),
+            "total_tokens": getattr(u, "total_tokens", 0),
+        } if u else None
+        return jsonify({"reply": reply or "...", "usage": usage})
 
     except Exception as e:
         print("AI ERROR:", e)
