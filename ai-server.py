@@ -21,13 +21,13 @@ CORS(app, origins=[
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-def safe_ai_call(messages, max_tokens, retries=2, use_json=False):
+def safe_ai_call(messages, max_tokens, retries=2, use_json=False, temperature=0.8):
     for i in range(retries + 1):
         try:
             kwargs = dict(
                 model="openai/gpt-oss-120b",
                 messages=messages,
-                temperature=0.8,
+                temperature=temperature,
                 max_completion_tokens=max_tokens,
                 timeout=30
             )
@@ -181,18 +181,36 @@ def ai():
                 "Transform the message into different greeting styles. "
                 "Give 3-5 variations like casual, formal, friendly, slang."
             )
-        elif mode == "assistant_draft":   # NEW
+                elif mode == "assistant_draft":
+            history_lines = []
+            for h in (data.get("history") or [])[-4:]:
+                if isinstance(h, dict) and isinstance(h.get("content"), str):
+                    history_lines.append(f"{h.get('role', 'user')}: {h['content'][:200]}")
+            history_block = (
+                "Earlier in this session (ONLY use it to understand what words like 'it', 'that', 'again' refer to):\n"
+                + "\n".join(history_lines) + "\n\n"
+            ) if history_lines else ""
+
             system = (
-                "You write the exact chat message that will be sent TO a contact, based on the user's instruction. "
-                "The input may contain the content ('hi', 'how is he', 'if she is free tonight') and optionally a style "
-                "request ('in a very expressive way', 'politely', 'funny', 'formal'). "
-                "Write the final message addressed directly to the contact in second person: "
-                "'he'/'she'/'him'/'her' become 'you', 'his'/'her' become 'your' "
-                "('how is he' -> 'How are you?', 'if he is free tonight' -> 'Are you free tonight?'). "
-                "If a style is requested, APPLY it to the message (e.g. 'hi in a very expressive way' -> "
-                "'Heyyy! 😄 So happy to say hi to you today!'). Never write the style words themselves into the message. "
-                "Do NOT invent names, dates, numbers, or events. "
-                "Return ONLY the message text, no quotes, no explanation."
+                history_block +
+                "You write the exact chat message that will be sent TO a contact. "
+                "The input is an INSTRUCTION from the user and starts with ASK, TELL, or LET ... KNOW.\n"
+                "RULES:\n"
+                "1. ASK the contact: X  -> write a QUESTION addressed to the contact.\n"
+                "   'ASK the contact: if he is ok' -> 'Are you okay?'\n"
+                "   'ASK the contact: if she is free tonight' -> 'Are you free tonight?'\n"
+                "   'ASK the contact: where he is' -> 'Where are you?'\n"
+                "2. TELL the contact: X -> write a STATEMENT. Words about the contact become 'you'; "
+                "words about the user stay 'I'.\n"
+                "   'TELL the contact: I will be late' -> 'I'll be late.'\n"
+                "   'TELL the contact: he did great' -> 'You did great!'\n"
+                "3. LET the contact KNOW: X -> same as TELL.\n"
+                "4. A bare greeting ('hi', 'hello') -> just the greeting.\n"
+                "5. If a style is requested ('politely', 'funny', 'expressive'), apply it. "
+                "Never write the style words into the message.\n"
+                "6. NEVER answer the question yourself, NEVER say 'based on previous', NEVER explain. "
+                "Do NOT invent names, dates, numbers, or events.\n"
+                "Return ONLY the final message text, no quotes."
             )
 
         # CHANGED — help_me_write must NEVER be overwritten by the persona/reply
@@ -224,13 +242,14 @@ NON-NEGOTIABLE RULES:
 Respond with ONLY the reply text — no labels, no quotes, no meta-commentary."""
 
         max_tokens = 400 if mode in ("ai_writer", "help_me_write", "assistant_draft") else 150
-        completion = safe_ai_call(
+                completion = safe_ai_call(
             [
                 {"role": "system", "content": system},
                 {"role": "user", "content": text}
             ],
             max_tokens=max_tokens,
-            use_json=(mode == "ai_writer")
+            use_json=(mode == "ai_writer"),
+            temperature=0.3 if mode == "assistant_draft" else 0.8   # NEW — drafts must be predictable
         )
 
         reply = completion.choices[0].message.content.strip()
@@ -240,7 +259,7 @@ Respond with ONLY the reply text — no labels, no quotes, no meta-commentary.""
                 parsed = json.loads(reply)
                 if not isinstance(parsed.get("results"), list) or len(parsed["results"]) < 2:
                     raise ValueError("bad results")
-            except Exception:
+                        except Exception:
                 clean = reply.replace('"', "'").strip()
                 fallback = {
                     "results": [
@@ -250,15 +269,15 @@ Respond with ONLY the reply text — no labels, no quotes, no meta-commentary.""
                         clean + " — just checking in!"
                     ]
                 }
-                                u = getattr(completion, "usage", None)
+                u = getattr(completion, "usage", None)
                 return jsonify({
                     "reply": json.dumps(fallback),
                     "usage": {"total_tokens": getattr(u, "total_tokens", 0)} if u else None
                 })
 
         if not reply:
-              print("⚠️ EMPTY AI REPLY — mode:", mode, "system len:", len(system), "text:", text[:100])
-                u = getattr(completion, "usage", None)
+            print("⚠️ EMPTY AI REPLY — mode:", mode, "system len:", len(system), "text:", text[:100])
+        u = getattr(completion, "usage", None)
         usage = {
             "prompt_tokens": getattr(u, "prompt_tokens", 0),
             "completion_tokens": getattr(u, "completion_tokens", 0),
