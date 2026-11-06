@@ -176,12 +176,12 @@ def ai():
                                 "Do NOT use markdown. Do NOT number the items. "
                 "Each result must be a natural chat message that means the same thing as the input."
             )
-        elif mode == "greeting":
+                elif mode == "greeting":
             system = (
                 "Transform the message into different greeting styles. "
                 "Give 3-5 variations like casual, formal, friendly, slang."
             )
-                elif mode == "assistant_draft":
+        elif mode == "assistant_draft":
             history_lines = []
             for h in (data.get("history") or [])[-4:]:
                 if isinstance(h, dict) and isinstance(h.get("content"), str):
@@ -241,8 +241,8 @@ NON-NEGOTIABLE RULES:
 
 Respond with ONLY the reply text — no labels, no quotes, no meta-commentary."""
 
-        max_tokens = 400 if mode in ("ai_writer", "help_me_write", "assistant_draft") else 150
-                completion = safe_ai_call(
+                max_tokens = 400 if mode in ("ai_writer", "help_me_write", "assistant_draft") else 150
+        completion = safe_ai_call(
             [
                 {"role": "system", "content": system},
                 {"role": "user", "content": text}
@@ -254,12 +254,12 @@ Respond with ONLY the reply text — no labels, no quotes, no meta-commentary.""
 
         reply = completion.choices[0].message.content.strip()
 
-        if mode == "ai_writer":
+                if mode == "ai_writer":
             try:
                 parsed = json.loads(reply)
                 if not isinstance(parsed.get("results"), list) or len(parsed["results"]) < 2:
                     raise ValueError("bad results")
-                        except Exception:
+            except Exception:
                 clean = reply.replace('"', "'").strip()
                 fallback = {
                     "results": [
@@ -312,4 +312,5 @@ def self_ping():
 threading.Thread(target=self_ping, daemon=True).start()
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
