@@ -13,13 +13,11 @@ CORS(app, origins=[
     "https://chatflow.com",
     "https://backend-1-liqz.onrender.com",
     "https://testback-4sru.onrender.com",
-    "https://backend-vz58.onrender.com",
-    "https://chatflow-ai-o3e6.onrender.com",
     "https://backend-vz58.onrender.com"
-    
 ])
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
 
 def safe_ai_call(messages, max_tokens, retries=2, use_json=False, temperature=0.8):
     for i in range(retries + 1):
@@ -39,20 +37,18 @@ def safe_ai_call(messages, max_tokens, retries=2, use_json=False, temperature=0.
                 raise e
             time.sleep(0.5)
 
+
 @app.route("/ai", methods=["POST"])
 def ai():
     data = request.get_json()
     text = data.get("text", "")
     mode = data.get("mode", "default")
     instructions = data.get("instructions", "")
-    tone = data.get("tone", "")   # used by mode == "help_me_write" AND mode == "chat" (Auto AI)
+    tone = data.get("tone", "")
 
     try:
         system = "Reply in 1 short natural sentence like in a phone call."
 
-        # parse the same "|length:X|emoji:Y" packing used by help_me_write,
-        # so Auto AI's Short/Long buttons actually change reply length, and the
-        # model never invents extra facts just to pad out a "long" answer.
         def parse_length_emoji(raw_tone):
             parts = raw_tone.split("|") if raw_tone else []
             tone_label = parts[0].strip() if parts else ""
@@ -65,9 +61,6 @@ def ai():
                     use_emoji = p.split(":", 1)[1].strip().lower() == "true"
             return tone_label, length, use_emoji
 
-        # NEW — these are computed up front (not just inside the "chat" if-block)
-        # so the persona/instructions block below can reuse them instead of
-        # hardcoding its own separate length/emoji rules.
         chat_length = "Medium"
         chat_length_rule = "Reply in 1-2 short natural sentences like in a phone call."
         chat_emoji_rule = "Do not use any emoji."
@@ -93,19 +86,12 @@ def ai():
             else:
                 chat_length_rule = "Reply in 1-2 short natural sentences like in a phone call."
 
-            # NEW — emoji rule stated first so the small/fast model is less
-            # likely to drop it.
             system = chat_emoji_rule + " " + chat_length_rule
 
         if mode == "summary":
             system = "Summarize in 2 short sentences."
+
         elif mode == "help_me_write":
-            # tone now arrives packed as "Formal|length:Short|emoji:False"
-            # FIXED — this block was dedented incorrectly (fell outside the
-            # elif entirely), which is a syntax error and would crash the
-            # whole /ai endpoint on deploy — matching the symptom of
-            # "tone selection doesn't generate anything." Now properly
-            # nested inside elif mode == "help_me_write".
             parts = tone.split("|") if tone else []
             length = "Medium"
             use_emoji = False
@@ -116,7 +102,7 @@ def ai():
                 elif p.startswith("emoji:"):
                     use_emoji = p.split(":", 1)[1].strip().lower() == "true"
                 elif p.strip():
-                    tone_label = p.strip()  # whatever's left is the tone label, in any position
+                    tone_label = p.strip()
 
             tone_line = f"Tone: {tone_label}.\n" if tone_label else ""
             emoji_line = (
@@ -142,10 +128,6 @@ def ai():
             else:
                 length_line = "Write 2-3 sentences.\n"
 
-            # NEW — emoji/length are put FIRST in the system prompt. Small, fast
-            # models (llama-3.1-8b-instant) are much more likely to drop
-            # instructions buried at the end of a long system prompt than ones
-            # stated up front.
             system = (
                 f"{emoji_line}{length_line}"
                 "You are a message-drafting tool inside a chat app. The user is composing a message "
@@ -163,6 +145,7 @@ def ai():
                 "no greeting like 'Sure, here is...'. "
                 "Never state something as fact unless it was in the user's prompt."
             )
+
         elif mode == "ai_writer":
             system = (
                 "You are a creative message rewriter for a chat app. "
@@ -173,14 +156,16 @@ def ai():
                 "You MUST respond with ONLY this exact JSON format, nothing else:\n"
                 "{\"results\": [\"version 1\", \"version 2\", \"version 3\", \"version 4\"]}\n"
                 "Do NOT add any explanation, greeting, or text outside the JSON. "
-                                "Do NOT use markdown. Do NOT number the items. "
+                "Do NOT use markdown. Do NOT number the items. "
                 "Each result must be a natural chat message that means the same thing as the input."
-                        )
+            )
+
         elif mode == "greeting":
             system = (
                 "Transform the message into different greeting styles. "
                 "Give 3-5 variations like casual, formal, friendly, slang."
             )
+
         elif mode == "assistant_draft":
             history_lines = []
             for h in (data.get("history") or [])[-4:]:
@@ -213,13 +198,6 @@ def ai():
                 "Return ONLY the final message text, no quotes."
             )
 
-        # CHANGED — help_me_write must NEVER be overwritten by the persona/reply
-        # template below. That template assumes it's replying TO an incoming
-        # message ("role-playing as the user in a chat conversation"), which is
-        # exactly why inputs like "can you answer a question" got answered
-        # instead of drafted as a message to send. help_me_write already has its
-                # own correct system prompt built above (drafting-tool instructions) and
-        # must keep it regardless of whatever persona/instructions Auto AI has saved.
         if instructions and instructions.strip() and mode not in ("ai_writer", "help_me_write", "assistant_draft"):
             length_instruction = chat_length_rule if mode == "chat" else "Keep replies short: 1 sentence, like a real text/phone reply."
             emoji_instruction = chat_emoji_rule if mode == "chat" else "Do not use any emoji unless the persona explicitly calls for it."
@@ -241,15 +219,16 @@ NON-NEGOTIABLE RULES:
 
 Respond with ONLY the reply text — no labels, no quotes, no meta-commentary."""
 
-                        max_tokens = 400 if mode in ("ai_writer", "help_me_write", "assistant_draft") else 150
-                        completion = safe_ai_call(
+        max_tokens = 400 if mode in ("ai_writer", "help_me_write", "assistant_draft") else 150
+
+        completion = safe_ai_call(
             [
                 {"role": "system", "content": system},
                 {"role": "user", "content": text}
             ],
             max_tokens=max_tokens,
             use_json=(mode == "ai_writer"),
-            temperature=0.3 if mode == "assistant_draft" else 0.8   # NEW — drafts must be predictable
+            temperature=0.3 if mode == "assistant_draft" else 0.8
         )
 
         reply = completion.choices[0].message.content.strip()
@@ -291,9 +270,11 @@ Respond with ONLY the reply text — no labels, no quotes, no meta-commentary.""
             return jsonify({"message": "⚠️ AI request limit reached."}), 429
         return jsonify({"message": "AI error"}), 500
 
+
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok"}), 200
+
 
 def self_ping():
     while True:
@@ -308,6 +289,7 @@ def self_ping():
             print("✅ Self-ping sent")
         except Exception as e:
             print("⚠️ Self-ping failed:", e)
+
 
 threading.Thread(target=self_ping, daemon=True).start()
 
