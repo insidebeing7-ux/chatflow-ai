@@ -231,14 +231,14 @@ Respond with ONLY the reply text — no labels, no quotes, no meta-commentary.""
 
         max_tokens = 400 if mode in ("ai_writer", "help_me_write", "assistant_draft") else 150
 
-        completion = safe_ai_call(
+                completion = safe_ai_call(
             [
                 {"role": "system", "content": system},
                 {"role": "user", "content": text}
             ],
             max_tokens=max_tokens,
             use_json=(mode == "ai_writer"),
-            t            temperature=0.1 if mode == "spellfix" else (0.3 if mode == "assistant_draft" else 0.8)
+            temperature=0.1 if mode == "spellfix" else (0.3 if mode == "assistant_draft" else 0.8)
         )
 
         reply = completion.choices[0].message.content.strip()
