@@ -231,7 +231,7 @@ Respond with ONLY the reply text — no labels, no quotes, no meta-commentary.""
 
         max_tokens = 400 if mode in ("ai_writer", "help_me_write", "assistant_draft") else 150
 
-                completion = safe_ai_call(
+        completion = safe_ai_call(
             [
                 {"role": "system", "content": system},
                 {"role": "user", "content": text}
