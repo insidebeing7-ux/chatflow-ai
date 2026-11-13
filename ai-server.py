@@ -198,7 +198,17 @@ def ai():
                 "Return ONLY the final message text, no quotes."
             )
 
-        if instructions and instructions.strip() and mode not in ("ai_writer", "help_me_write", "assistant_draft"):
+        elif mode == "spellfix":
+            system = (
+                "You are a spelling corrector for chat messages. Fix spelling mistakes, typos, "
+                "wrongly split or joined words, capitalization and basic punctuation. "
+                "Keep the SAME language, meaning, wording and tone. Do NOT answer the message, "
+                "do NOT add or remove information, do NOT translate, do NOT explain. "
+                "If the text is already correct, return it unchanged. "
+                "Return ONLY the corrected text, no quotes."
+            )
+
+        if instructions and instructions.strip() and mode not in ("ai_writer", "help_me_write", "assistant_draft", "spellfix"):
             length_instruction = chat_length_rule if mode == "chat" else "Keep replies short: 1 sentence, like a real text/phone reply."
             emoji_instruction = chat_emoji_rule if mode == "chat" else "Do not use any emoji unless the persona explicitly calls for it."
 
@@ -228,7 +238,7 @@ Respond with ONLY the reply text — no labels, no quotes, no meta-commentary.""
             ],
             max_tokens=max_tokens,
             use_json=(mode == "ai_writer"),
-            temperature=0.3 if mode == "assistant_draft" else 0.8
+            t            temperature=0.1 if mode == "spellfix" else (0.3 if mode == "assistant_draft" else 0.8)
         )
 
         reply = completion.choices[0].message.content.strip()
